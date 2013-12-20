@@ -1,7 +1,13 @@
 dist
 cabal-dev
+*.sandbox.config
 *.o
 *.hi
 *.chi
 *.chs.h
+*.sublime-workspace
 .virthualenv
+.cabal-sandbox
+
+# ignore PNGs
+*.png
