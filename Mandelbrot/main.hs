@@ -8,21 +8,21 @@ data Compl =
       } deriving (Show, Eq)
 
 data ViewWindow =
-    Vw { upperLeft  :: Compl
-       , lowerRight :: Compl
-       } deriving (Show)
+    View { upperLeft  :: Compl
+         , lowerRight :: Compl
+         } deriving (Show)
 
-data PictureCoords = Pc { x :: Int, y :: Int }
-data PictureSize   = Ps { width :: Int, height :: Int }
+data PictureCoords = Coords { x :: Int, y :: Int }
+data PictureSize   = Size   { width :: Int, height :: Int }
 
 type Steps = Int
 
 main :: IO()
 main = do
     putStrLn "generating Mandelbrot..."
-    let view       = Vw (C (-2.4) 1.2) (C 1.1 (-1.4))
-    let maxSteps   = 100
-    let resolution = Ps 1000 700
+    let view       = View (C (-2.4) 1.2) (C 1.1 (-1.4))
+    let maxSteps   = 2048
+    let resolution = Size 1000 700
     let image      = mandelbrotImage maxSteps view resolution
 
     writePng "./mandelbrot.png" image
@@ -30,19 +30,23 @@ main = do
     putStrLn "you should have a image (mandelbrot.png)"
 
 mandelbrotImage :: Steps -> ViewWindow -> PictureSize -> Image PixelRGB8
-mandelbrotImage maxSteps vw ps@(Ps w h) = generateImage calcPixel w h
-    where calcPixel x' y' = color maxSteps $ mandelbrotIter maxSteps $ project vw ps (Pc x' y')
+mandelbrotImage maxSteps vw sz@(Size w h) = generateImage calcPixel w h
+    where calcPixel x' y' = color maxSteps $ mandelbrotIter maxSteps $ project vw sz (Coords x' y')
 
 color :: Steps -> Steps -> PixelRGB8
 color maxSteps steps =
-    if steps < maxSteps then PixelRGB8 255 255 255 else PixelRGB8 0 0 0
+    PixelRGB8 (fromIntegral sr) (fromIntegral sg) (fromIntegral sb)
+    where s  = steps * 256*256*256 `div` maxSteps 
+          sr = s
+          sg = s `div` 256
+          sb = s `div` 65536
 
 -- | translates a picture-coords into the ViewWindow
 project :: ViewWindow -> PictureSize -> PictureCoords -> Compl
-project (Vw ul lr) ps pc = ul + (C (w*x') (h*y'))
+project (View ul lr) sz c = ul + (C (w*x') (h*y'))
     where (C w h) = lr - ul
-          x'      = fromIntegral (x pc) / fromIntegral (width ps)
-          y'      = fromIntegral (y pc) / fromIntegral (height ps)
+          x'      = fromIntegral (x c) / fromIntegral (width sz)
+          y'      = fromIntegral (y c) / fromIntegral (height sz)
 
 -- | processes - based on a maximum step count and a starting point -
 --   the numbers or steps it takes a point using the iteration-rule
