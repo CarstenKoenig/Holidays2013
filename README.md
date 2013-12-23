@@ -8,6 +8,8 @@ I had a look around Hackage searching for a suitable library to help me generate
 
 Of course I need something to toy with and I always loved to write yet another mandelbrot-set drawing app ... so here we go!
 
+Right now this will only produce a complete image of the well-known set - no zoom or anything. Like this: ![MandelbrotSetImage](./Mandelbrot/mandelbrot.png "Mandelbrot Set")
+
 ### obvious-stupid-mistakes I made
 Yes this is embarassing, but here are the most-stupid:
 
