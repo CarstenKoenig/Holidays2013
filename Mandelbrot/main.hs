@@ -21,8 +21,8 @@ main :: IO()
 main = do
     putStrLn "generating Mandelbrot..."
     let view       = View (C (-2.4) 1.2) (C 1.1 (-1.4))
-    let maxSteps   = 2048
-    let resolution = Size 1000 700
+    let maxSteps   = 5000
+    let resolution = Size 2000 1400
     let image      = mandelbrotImage maxSteps view resolution
 
     writePng "./mandelbrot.png" image
