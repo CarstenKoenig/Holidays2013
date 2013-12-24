@@ -10,6 +10,8 @@ Of course I need something to toy with and I always loved to write yet another m
 
 Right now this will only produce a complete image of the well-known set - no zoom or anything. Like this: ![MandelbrotSetImage](./Mandelbrot/mandelbrot.png "Mandelbrot Set")
 
+I modified the algorithm to test the [Repa](http://hackage.haskell.org/package/repa) package - that is I tried to compute the images pixel-array in parallel. So far the speedupt is not that great and I guess I have to really think this through a bit more.
+
 ### obvious-stupid-mistakes I made
 Yes this is embarassing, but here are the most-stupid:
 
