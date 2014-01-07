@@ -1,106 +1,57 @@
 module Main where
 
-import Codec.Picture (PixelRGB8(..), Image, generateImage, writePng)
-import Data.Array.Repa as Repa
-import Data.Functor.Identity
+import Mandelbrot
 
-data Compl =
-    C { re :: Double
-      , im :: Double
-      } deriving (Show, Eq)
+import Control.Monad
 
-data ViewWindow =
-    View { upperLeft  :: Compl
-         , lowerRight :: Compl
-         } deriving (Show)
+import qualified Graphics.UI.Threepenny as UI
+import qualified Graphics.UI.Threepenny.Attributes as Attr
+import Graphics.UI.Threepenny.Core
 
-data PictureCoords = Coords { x :: Int, y :: Int }
-data PictureSize   = Size   { width :: Int, height :: Int }
+{-----------------------------------------------------------------------------
+Buttons
+------------------------------------------------------------------------------}
 
-type Steps = Int
-type RGB   = (Int, Int, Int)
-
-main :: IO()
+main :: IO ()
 main = do
-    putStrLn "generating Mandelbrot..."
+    startGUI defaultConfig
+        { tpPort = 10000
+        , tpStatic = Just "./"
+        } setup
+
+setup :: Window -> UI ()
+setup w = void $ do
+    return w # set title "Mandelbrot generator "
+    -- UI.addStyleSheet w "buttons.css"
+
+    message   <- string ""
+    image     <- mkImage "/static/mandelbrot.png"
+    (_, view) <- mkButton "default View" $ \ () -> do
+                    element image # set Attr.src ""
+                    element message # set text "rendering please wait ..."
+                    liftIO $ render
+                    element message # set text ""
+                    element image  # set Attr.src "/static/mandelbrot.png"
+                    return ()
+
+    getBody w #+
+        [UI.div #. "wrap" #+ [element view, element message, element image]]
+
+mkImage :: String -> UI Element
+mkImage source = do
+    image <- UI.image #. "mandelImage"
+    element image # set Attr.src source
+
+mkButton :: String -> (() -> UI ()) -> UI (Element, Element)
+mkButton caption onClick = do
+    button <- UI.button #. "button" #+ [string caption]
+    on UI.click button $ \_ -> onClick()
+    view <- UI.p #+ [element button]
+    return (button, view)
+
+render :: IO()
+render = do
     let view       = View (C (-2.4) 1.2) (C 1.1 (-1.4))
     let maxSteps   = 5000
-    let resolution = Size 2000 1400
-    let image      = mandelbrotParallel maxSteps view resolution
-
-    writePng "./mandelbrot.png" image
-
-    putStrLn "you should have a image (mandelbrot.png)"
-
--- | calculates the mandelbrot-set as an colored image
-mandelbrotImage :: Steps -> ViewWindow -> PictureSize -> Image PixelRGB8
-mandelbrotImage maxSteps vw sz@(Size w h) = generateImage calcPixel w h
-    where calcPixel x' y' = color maxSteps $ mandelbrotIter maxSteps $ project vw sz (Coords x' y')
-
--- | calculates the mandelbrot-set as an colored image using the Repa package (parallel array computation)
-mandelbrotParallel :: Steps -> ViewWindow -> PictureSize -> Image PixelRGB8
-mandelbrotParallel maxSteps vw sz@(Size w h) = runIdentity go
-    where go             = do
-            arr <- stepArray
-            return $ generateImage (getPixel arr) w h
-          getPixel arr x' y' = rgbToPixelRGB8 $ arr ! (Z:.x':.y')
-          stepArray :: Identity (Array U DIM2 RGB)
-          stepArray          = computeP $ mandelbrotArray maxSteps vw sz
-
-mandelbrotArray :: Steps -> ViewWindow -> PictureSize -> Array D DIM2 RGB
-mandelbrotArray maxSteps vw sz@(Size w h) = fromFunction (Z:.w:.h) calcPixel
-    where calcPixel (Z:.x':.y') = colorRGB maxSteps $ mandelbrotIter maxSteps $ project vw sz (Coords x' y')
-
-color :: Steps -> Steps -> PixelRGB8
-color maxSteps = rgbToPixelRGB8 . colorRGB maxSteps
-
-rgbToPixelRGB8 :: RGB -> PixelRGB8
-rgbToPixelRGB8 (r, g, b) = PixelRGB8 (fromIntegral r) (fromIntegral g) (fromIntegral b)
-
--- | translates the steps taken till the sequence got out-of-bounds into a RGB value for a color using a very basic approach of just bit-masking (notice: in the later stages the PixelRGB8 structure will "mod" to 8-bits by default)
-colorRGB :: Steps -> Steps -> RGB
-colorRGB maxSteps steps = (sr, sg, sb)
-    where s  = steps * 256*256*256 `div` maxSteps 
-          sr = s
-          sg = s `div` 256
-          sb = s `div` 65536
-
-
--- | translates a picture-coords into the ViewWindow
-project :: ViewWindow -> PictureSize -> PictureCoords -> Compl
-project (View ul lr) sz c = ul + (C (w*x') (h*y'))
-    where (C w h) = lr - ul
-          x'      = fromIntegral (x c) / fromIntegral (width sz)
-          y'      = fromIntegral (y c) / fromIntegral (height sz)
-
--- | processes - based on a maximum step count and a starting point -
---   the numbers or steps it takes a point using the iteration-rule
---   z' = z*z + c - to escape the bound region
-mandelbrotIter :: Steps -> Compl -> Steps
-mandelbrotIter maxSteps c = runIter 0 c
-    where runIter steps z =
-            if steps >= maxSteps || escapes z
-                then steps
-                else runIter (steps+1) (iter z)
-          iter z = z*z + c
-
--- | does a point in the complex plane escape to infinity
---   (of course using mandelbrots iteration rule z' = z*z + c)
-escapes :: Compl -> Bool
-escapes = (>= 4) . len2
-
-len2 :: Compl -> Double
-len2 (C r i) = r*r + i*i
-
--- | Implement Compl as Num represented as a complex number in the
---   most obvious way - notice that signum was choosen to fullfill
---   abs x * signum x == x
-instance Num Compl where
-    fromInteger i = C (fromInteger i) 0
-    (C r i) + (C r' i') = C (r+r') (i+i')
-    (C r i) - (C r' i') = C (r-r') (i-i')
-    (C r i) * (C r' i') = C (r*r' - i*i') (r*i' + i*r')
-    negate (C r i)      = C (-r) (-i)
-    abs c               = C (sqrt $ len2 c) 0
-    signum c@(C r i)    = C (r / l2) (i / l2)
-        where l2        = len2 c
+    let resolution = Size 1024 711
+    createImageParallel view maxSteps resolution "./mandelbrot.png"
