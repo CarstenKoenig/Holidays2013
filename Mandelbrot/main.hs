@@ -25,33 +25,40 @@ setup w = void $ do
     -- UI.addStyleSheet w "buttons.css"
 
     message   <- string ""
-    image     <- mkImage "/static/mandelbrot.png"
-    (_, view) <- mkButton "default View" $ \ () -> do
-                    element image # set Attr.src ""
-                    element message # set text "rendering please wait ..."
-                    liftIO $ render
-                    element message # set text ""
-                    element image  # set Attr.src "/static/mandelbrot.png"
-                    return ()
+    image     <- mandelbrotDisplay
 
     getBody w #+
-        [UI.div #. "wrap" #+ [element view, element message, element image]]
+        [UI.div #. "wrap" #+ [element message, element image]]
+
+    renderDisplay 5000 message image
+
 
 mkImage :: String -> UI Element
 mkImage source = do
     image <- UI.image #. "mandelImage"
     element image # set Attr.src source
 
-mkButton :: String -> (() -> UI ()) -> UI (Element, Element)
-mkButton caption onClick = do
-    button <- UI.button #. "button" #+ [string caption]
-    on UI.click button $ \_ -> onClick()
-    view <- UI.p #+ [element button]
-    return (button, view)
+data MandelbrotDisplay = MandelbrotDisplay
+    { view       :: ViewWindow
+    , resolution :: PictureSize
+    , visual     :: Element
+    }
 
-render :: IO()
-render = do
-    let view       = View (C (-2.4) 1.2) (C 1.1 (-1.4))
-    let maxSteps   = 5000
-    let resolution = Size 1024 711
-    createImageParallel view maxSteps resolution "./mandelbrot.png"
+mandelbrotDisplay :: UI MandelbrotDisplay
+mandelbrotDisplay = do
+    img <- mkImage ""
+    return $ MandelbrotDisplay defaultView defaultRes img
+    where defaultView = View (C (-2.4) 1.2) (C 1.1 (-1.4))
+          defaultRes  = Size 1024 711
+
+renderDisplay :: Steps -> Element -> MandelbrotDisplay -> UI ()
+renderDisplay maxSteps message d = do
+    element (visual d) # set Attr.src ""
+    element message # set text "rendering please wait ..."
+    liftIO $ createImageParallel (view d) maxSteps (resolution d) "./mandelbrot.png"
+    element message # set text ""
+    element (visual d) # set Attr.src "/static/mandelbrot.png"
+    return ()
+
+instance Widget MandelbrotDisplay where
+    getElement = visual
