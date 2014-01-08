@@ -12,9 +12,21 @@ Right now this will only produce a complete image of the well-known set - no zoo
 
 I modified the algorithm to test the [Repa](http://hackage.haskell.org/package/repa) package - that is I tried to compute the images pixel-array in parallel. So far the speedupt is not that great and I guess I have to really think this through a bit more.
 
+### fiddling with [threepenny-gui](http://www.haskell.org/haskellwiki/Threepenny-gui)
+After some timeout I decided to play a bit more with this mandelbrot-generator by trying to implement it using threepenny-gui.
+
+As of now this works ... well ok - it's not very fast or very beautiful (just shows the image and some very basic "wait"-text).
+
+I am not sure I really got the libraries spirit right but it was kindof fun (really nasty hacking and head-scratching, till I got it).
+
+To get this running you have to run the executable and then go with your favorite browser to [localhost:10000](http://localhost:10000/).
+It will take a while to create the starting image and after this is done you can click on a point on the image to zoom into that region (rinse and repeat / enjoy).
+
 ### obvious-stupid-mistakes I made
 Yes this is embarassing, but here are the most-stupid:
 
 - toyed with JuicyPixels and imported `PixelRGB8` but forgot the constructors (`PixelRGB8(..)`) and then being dumbfolded for several minutes by the obvious error:
 
     Not in scope: data constructor `PixelRGB8'
+
+- tried to implement a widget into Threepenny-GUI to show my image and really fried my head how I could to some kind of accumulation to translate the clicks into new views (you see: i need the old-view to know "where" I clicked) ... the solution I found was to create a "mapper"-function between views for a click (at the image-coordinates) and then use this together with [accumulateB](http://hackage.haskell.org/package/threepenny-gui-0.4.0.1/docs/Reactive-Threepenny.html#v:accumB) interesting concept but a bit counterintuitive for me but logical in the end ... really love Haskell - always something new to figure out.

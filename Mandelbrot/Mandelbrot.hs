@@ -70,10 +70,9 @@ colorRGB :: Steps -> Steps -> RGB
 colorRGB maxSteps steps
     | steps >= maxSteps = (0, 0, 0)
     | otherwise         = (sr, sg, sb)
-    where s  = steps * 256*256*256 `div` maxSteps 
-          sr = s
-          sg = s `div` 256
-          sb = s `div` 65536
+    where sr = steps
+          sg = 64 * (steps `div` 256)
+          sb = 16 * (steps `div` 65536)
 
 
 -- | translates a picture-coords into the ViewWindow
@@ -88,11 +87,6 @@ viewWidth v = re $ lowerRight v - upperLeft v
 
 viewHeight :: ViewWindow -> Double
 viewHeight v = im $ lowerRight v - upperLeft v
-
-viewCenter :: ViewWindow -> Compl
-viewCenter v = upperLeft v + C (w/2) (h/2)
-  where w = viewWidth v
-        h = viewHeight v
 
 zoomTo :: Double -> Compl -> ViewWindow -> ViewWindow
 zoomTo z c v = View (c-d) (c+d)
