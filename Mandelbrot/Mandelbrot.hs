@@ -1,10 +1,13 @@
 module Mandelbrot 
     ( Compl (..)
     , ViewWindow (..)
+    , PictureCoords (..)
     , PictureSize (..)
     , Steps
     , createImage
     , createImageParallel
+    , project
+    , zoomTo
     ) where
 
 import Codec.Picture (PixelRGB8(..), Image, generateImage, writePng)
@@ -79,6 +82,23 @@ project (View ul lr) sz c = ul + (C (w*x') (h*y'))
     where (C w h) = lr - ul
           x'      = fromIntegral (x c) / fromIntegral (width sz)
           y'      = fromIntegral (y c) / fromIntegral (height sz)
+
+viewWidth :: ViewWindow -> Double
+viewWidth v = re $ lowerRight v - upperLeft v
+
+viewHeight :: ViewWindow -> Double
+viewHeight v = im $ lowerRight v - upperLeft v
+
+viewCenter :: ViewWindow -> Compl
+viewCenter v = upperLeft v + C (w/2) (h/2)
+  where w = viewWidth v
+        h = viewHeight v
+
+zoomTo :: Double -> Compl -> ViewWindow -> ViewWindow
+zoomTo z c v = View (c-d) (c+d)
+    where d = C (w/2) (h/2)
+          w = (1/z) * viewWidth v
+          h = (1/z) * viewHeight v
 
 -- | processes - based on a maximum step count and a starting point -
 --   the numbers or steps it takes a point using the iteration-rule
