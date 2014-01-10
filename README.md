@@ -29,4 +29,7 @@ Yes this is embarassing, but here are the most-stupid:
 
     Not in scope: data constructor `PixelRGB8'
 
-- tried to implement a widget into Threepenny-GUI to show my image and really fried my head how I could to some kind of accumulation to translate the clicks into new views (you see: i need the old-view to know "where" I clicked) ... the solution I found was to create a "mapper"-function between views for a click (at the image-coordinates) and then use this together with [accumulateB](http://hackage.haskell.org/package/threepenny-gui-0.4.0.1/docs/Reactive-Threepenny.html#v:accumB) interesting concept but a bit counterintuitive for me but logical in the end ... really love Haskell - always something new to figure out.
+- tried to implement a widget into Threepenny-GUI to show my image. Needed some kind of accumulation to translate the clicks into new views (you see: i need the old-view to know "where" I clicked) into new, zoomed views ... the solution I found was to create a "mapper"-function between views for a click (at the image-coordinates) and then use this together with [accumulateB](http://hackage.haskell.org/package/threepenny-gui-0.4.0.1/docs/Reactive-Threepenny.html#v:accumB) interesting concept but a bit counterintuitive for me but logical in the end ... really love Haskell - always something new to figure out.
+- 
+## Thanks
+Thanks to Heinrich Apfelmus (the creator of Threepenny-GUI), who had a look on my little toy-project and gave me lots of really kind feedback!
