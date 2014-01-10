@@ -11,3 +11,6 @@ cabal-dev
 
 # ignore PNGs
 *.png
+
+# ignore eventlogs
+*.eventlog
