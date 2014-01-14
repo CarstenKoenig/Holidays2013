@@ -71,22 +71,29 @@ instance Widget MandelbrotDisplay where
 mandelbrotDisplay :: Settings -> UI MandelbrotDisplay
 mandelbrotDisplay settings = do
     img <- mkImage
-    msg <- string ""
+    msg <- string "click to zoom in"
     d   <- UI.div #. "wrap" #+ [element msg, element img]
 
+    (evRendering, setRendering) <- liftIO $ newEvent
+    rendering <- stepper False evRendering
+
     let
+        onRendering r = if r then const Nothing else Just . id
+
+        filteredMouseDown = filterJust . apply (onRendering <$> rendering) $ Ev.mousedown img
+
         makeViewChange (ptX, ptY) vw = zoomTo (zoom settings) cent vw
             where cent = project vw (resolution settings) (Coords ptX ptY)
 
         renderImage viewVal = void $ do
-            element img # set Attr.src ""
-            element msg # set text "rendering please wait ..."
+            liftIO $ setRendering True
             liftIO $ renderView settings viewVal (localPath renderImageName)
-            element msg # set text ""
             element img # set Attr.src (clientPath renderImageName)
+            liftIO $ setRendering False
 
-    vw <- accumB startView $ makeViewChange <$> Ev.mousedown img
+    vw <- accumB startView $ makeViewChange <$> filteredMouseDown
     onChanges vw renderImage
+    onChanges rendering (\r -> do element msg # set text (if r then "rendering please wait ..." else "click to zoom in"))
 
     return $ (MandelbrotDisplay vw d)
 
