@@ -11,13 +11,13 @@ module Mandelbrot
     ) where
 
 import Codec.Picture (PixelRGB8(..), Image, generateImage, writePng)
-import Data.Array.Repa as Repa
+import Data.Array.Repa as Repa hiding ((++))
 import Data.Functor.Identity
 
 data Compl =
     C { re :: Double
       , im :: Double
-      } deriving (Show, Eq)
+      } deriving (Eq)
 
 data ViewWindow =
     View { upperLeft  :: Compl
@@ -125,3 +125,6 @@ instance Num Compl where
     abs c               = C (sqrt $ len2 c) 0
     signum c@(C r i)    = C (r / l2) (i / l2)
         where l2        = len2 c
+
+instance Show Compl where 
+  show (C r i) = show r ++ " + " ++ show i ++ "I"

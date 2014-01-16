@@ -1,8 +1,10 @@
 module MandelbrotWidget 
     ( Settings (..)
     , MandelbrotDisplay (..)
+    , Compl (..)
+    , PictureSize (..)
+    , PictureCoords (..)
     , mandelbrotDisplay
-    , defaultSettings
     , verifyStartImageFile
     ) where
 
@@ -25,19 +27,14 @@ data Settings = Settings
     , renderSteps :: Steps}
 
 data MandelbrotDisplay = MandelbrotDisplay
-    { view       :: Behavior ViewWindow
-    , visual     :: Element
+    { view        :: Behavior ViewWindow
+    , isRendering :: Behavior Bool
+    , mousePos    :: Behavior Compl
+    , visual      :: Element
     }
 
 instance Widget MandelbrotDisplay where
     getElement = visual    
-
-defaultSettings :: Settings
-defaultSettings = Settings defaultRes defaultZoom defaultSteps
-    where
-    defaultRes     = Size 1024 711
-    defaultSteps   = 2048
-    defaultZoom    = 4
 
 startView :: ViewWindow
 startView          = View (C (-2.4) 1.2) (C 1.1 (-1.4))
@@ -49,7 +46,7 @@ renderImageName :: String
 renderImageName = "mandelbrot.png"
 
 localPath :: String -> FilePath
-localPath name = "./" ++ name
+localPath name = "./content/" ++ name
 
 clientPath :: String -> String
 clientPath name = "/static/" ++ name
@@ -57,8 +54,6 @@ clientPath name = "/static/" ++ name
 mandelbrotDisplay :: Settings -> UI MandelbrotDisplay
 mandelbrotDisplay settings = do
     img <- mkImage
-    msg <- string promptClick
-    d   <- UI.div #. "wrap" #+ [element msg, element img]
 
     -- we want to run the rendering in another thread
     (eDone, run) <- liftIO newAsync
@@ -66,30 +61,29 @@ mandelbrotDisplay settings = do
     let
         eMousedown = Ev.mousedown img
 
+        getPos (ptX, ptY) vw = project vw (resolution settings) (Coords ptX ptY)
+
         makeViewChange (ptX, ptY) vw = zoomTo (zoom settings) cent vw
-            where cent = project vw (resolution settings) (Coords ptX ptY)
+            where cent = getPos (ptX, ptY) vw
 
         render vw = liftIO . run $ renderView settings vw (localPath renderImageName)
 
         setImage () = element img # set Attr.src (clientPath renderImageName)
 
-        showPrompt isRendering = do
-            element msg # set text (if isRendering then waitMessage else promptClick)
-
-
     -- define behaviours (start rendering on mousedown, stop on end of rendering)
     rendering <- stepper False $ unionWith (||) (const False <$> eDone) (const True <$> eMousedown)
     -- change the view based on clicked position if not currently rendering
     vw        <- accumB startView $ makeViewChange <$> whenE (not <$> rendering) eMousedown
+    -- get the compl-coordinates for the mousepos
+    mPos      <- stepper (0,0) $ Ev.mousemove img
+    let 
+        cPos =  (getPos <$> mPos) <*> vw
 
     -- hook up side-effects
     onEvent   eDone     setImage
     onChanges vw        render
-    onChanges rendering showPrompt
 
-    return $ (MandelbrotDisplay vw d)
-    where promptClick = "click anywhere to zoom in to this point"
-          waitMessage = "rendering please wait ..."
+    return $ (MandelbrotDisplay vw rendering cPos img)
 
 renderView :: Settings -> ViewWindow -> FilePath -> IO()
 renderView settings vw = createImageParallel vw (renderSteps settings) (resolution settings)
